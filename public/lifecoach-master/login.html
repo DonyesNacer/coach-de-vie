@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="login.css">
+    <script src="index.js" defer></script>
+    <title>Login/Signup</title>
+</head>
+<body>
+    <div id="container" class="container">
+        <!-- FORM SECTION -->
+        <div class="row">
+            <!-- SIGN UP -->
+            <div class="col align-items-center flex-col sign-up">
+                <div class="form-wrapper align-items-center">
+                    <form id="signupForm" method="POST" action="/user/signup">
+                        <div class="form sign-up">
+                            <div class="input-group">
+                                <i class='bx bxs-user'></i>
+                                <input type="text" name="username" placeholder="Username" required>
+                              
+                            </div>
+                            <div class="input-group">
+                                <i class='bx bx-mail-send'></i>
+                                <input type="email" name="email" placeholder="Email" required>
+                               
+
+                            </div>
+                            <div class="input-group">
+                                <i class='bx bxs-lock-alt'></i>
+                                <input type="password" name="password" placeholder="Password" required>
+                               
+
+                            </div>
+                            <button type="submit">Sign up</button>
+                            <p>
+                                <span>Already have an account?</span>
+                                <b onclick="toggle()" class="pointer">Sign in here</b>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- END SIGN UP -->
+
+            <!-- SIGN IN -->
+            <div class="col align-items-center flex-col sign-in">
+                <div class="form-wrapper align-items-center">
+                    <form id="loginForm" method="POST" action="/user/login">
+                        <div class="form sign-in">
+                            <div class="input-group">
+                                <i class='bx bxs-user'></i>
+                                <input type="email" name="email" placeholder="Email" required>
+                            </div>
+                            <div class="input-group">
+                                <i class='bx bxs-lock-alt'></i>
+                                <input type="password" name="password" placeholder="Password" required>
+                            </div>
+                            <button type="submit">Sign in</button>
+                            <p>
+                                <b>Forgot password?</b>
+                            </p>
+                            <p>
+                                <span>Don't have an account?</span>
+                                <b onclick="toggle()" class="pointer">Sign up here</b>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- END SIGN IN -->
+        </div>
+        <!-- END FORM SECTION -->
+    </div>
+<script>
+   
+    // Select the container element
+    let container = document.getElementById('container');
+
+    // Toggle between sign-up and sign-in forms
+    const toggle = () => {
+        container.classList.toggle('sign-in');
+        container.classList.toggle('sign-up');
+    }
+
+    // Automatically show the sign-in form after a short delay
+    setTimeout(() => {
+        container.classList.add('sign-in');
+    }, 200);
+
+    // Handle signup form submission
+    document.getElementById('signupForm').addEventListener('submit', async function (e) {
+        e.preventDefault(); // Prevent the default form submission
+
+        // Collect form data
+        const formData = new FormData(this);
+        const data = {
+            username: formData.get('username'),
+            email: formData.get('email'),
+            password: formData.get('password'),
+        };
+
+        // Form validation before sending data
+        if (!validateSignupForm(data)) {
+            return; // Stop if validation fails
+        }
+
+        try {
+            // Send the form data as JSON to the backend
+            const response = await fetch('/user/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json', // Set the content type to JSON
+                },
+                body: JSON.stringify(data), // Send data as JSON
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                // Show success message
+                alert(result.message);
+                // Optionally, redirect to the login page or clear the form
+                document.getElementById('signupForm').reset();
+                toggle(); // Switch to sign-in form
+            } else {
+                // Show error message
+                showErrorMessages(result.errors || [result.message]);
+            }
+        } catch (error) {
+            // Handle network errors or unexpected issues
+            alert('An error occurred while submitting the form. Please try again.');
+        }
+    });
+
+    // Handle login form submission
+// Handle login form submission
+document.getElementById('loginForm').addEventListener('submit', async function (e) {
+    e.preventDefault(); // Prevent the default form submission
+
+    // Collect form data
+    const formData = new FormData(this);
+    const data = {
+        email: formData.get('email'),
+        password: formData.get('password'),
+    };
+    
+    console.log('Login data sent to server: ', data); // Log the data
+
+    // Form validation before sending data
+    if (!validateLoginForm(data)) {
+        return; // Stop if validation fails
+    }
+
+    try {
+        // Send the form data as JSON to the backend
+        const response = await fetch('/user/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(result.message);
+
+            if (result.isAdmin) {
+                window.location.href = "dashboardadmin.html";
+            } else {
+                toggle(); // Switch to sign-up form or another page
+                alert('Logged in successfully!');
+            }
+        } else {
+            showErrorMessages(result.errors || [result.message]);
+        }
+    } catch (error) {
+        alert('An error occurred while submitting the form. Please try again.');
+    }
+});
+
+
+      
+    // Validate signup form data
+    function validateSignupForm(data) {
+        const { username, email, password } = data;
+        let errors = [];
+
+        // Username is required
+        if (!username) {
+            errors.push("Username is required.");
+        }
+
+        // Email validation (must be in the format of example@gmail.com)
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+        if (!email || !emailRegex.test(email)) {
+            errors.push("Email must be in the format of example@gmail.com.");
+        }
+
+        // Password validation (at least 8 characters)
+        if (!password || password.length < 8) {
+            errors.push("Password must be at least 8 characters long.");
+        }
+
+        // Display errors if any
+        if (errors.length > 0) {
+            showErrorMessages(errors);
+            return false;
+        }
+
+        return true;
+    }
+
+    // Validate login form data
+    function validateLoginForm(data) {
+        const { email, password } = data;
+        let errors = [];
+
+        // Email and password are required
+        if (!email) {
+            errors.push("Email is required.");
+        }
+
+        if (!password) {
+            errors.push("Password is required.");
+        }
+
+        // Display errors if any
+        if (errors.length > 0) {
+            showErrorMessages(errors);
+            return false;
+        }
+
+        return true;
+    }
+
+    // Show error messages on the form
+    function showErrorMessages(errors) {
+        // Display each error message under the respective form fields
+        errors.forEach(error => {
+            alert(error); // You can also display this below the respective field for better UX
+        });
+    }
+
+</script>
+</body>
+</html>

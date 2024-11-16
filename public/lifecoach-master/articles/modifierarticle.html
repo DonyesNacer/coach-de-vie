@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modifier l'Article</title>
+  
+  <style>
+    /* Styles similaires à ceux de la page d'ajout */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      height: 100vh;
+      flex-direction: column;
+    }
+    .form-container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      max-width: 800px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .form-container h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .form-container label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .form-container input, .form-container select, .form-container textarea, .form-container button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .form-container button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .form-container button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Modifier l'Article</h2>
+    <form id="articleForm">
+      <label for="titre">Titre :</label>
+      <input type="text" id="titre" name="titre" placeholder="Titre de l'article" required />
+
+      <label for="sujet">Sujet :</label>
+      <textarea id="sujet" name="sujet" rows="4" placeholder="Sujet de l'article" required></textarea>
+
+      <label for="image">Choisissez une image :</label>
+      <select id="image" name="image" required>
+        <option value="">-- Sélectionner une image --</option>
+      </select>
+
+      <button type="submit">Modifier l'Article</button>
+    </form>
+   
+    <button onclick="window.location.href='listearticle.html'" class="add-article">Retour à la liste des articles</button>
+  </div>
+  <script>
+    // Fonction pour charger les images disponibles dans la liste déroulante
+    async function loadImages() {
+      try {
+        const response = await fetch('/images-list');
+        if (!response.ok) {
+          throw new Error('Échec de la récupération des images');
+        }
+        const images = await response.json();
+        const select = document.getElementById('image');
+    
+        select.innerHTML = '';  // Clear existing options
+    
+        // Ajouter une option par défaut
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Choisir une image';
+        select.appendChild(defaultOption);
+    
+        images.forEach(image => {
+          const option = document.createElement('option');
+          option.value = `/articles/images/${image}`;
+          option.textContent = image;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Erreur lors du chargement des images :', error);
+        alert('Erreur lors du chargement des images.');
+      }
+    }
+  
+    // Fonction pour charger les données existantes pour un article à modifier
+    async function loadArticle(id) {
+      try {
+        const response = await fetch(`/article/${id}`);
+        if (!response.ok) {
+          throw new Error('Article non trouvé');
+        }
+        const data = await response.json();
+    
+        // Vérifier si l'article existe
+        const article = data.article;
+    
+        // Remplir le formulaire avec les données existantes
+        document.getElementById('titre').value = article ? article.titre : '';
+        document.getElementById('sujet').value = article ? article.sujet : '';
+        document.getElementById('image').value = article ? article.image : '';
+      } catch (error) {
+        console.error('Erreur lors du chargement de l\'article :', error);
+        alert('Erreur lors du chargement de l\'article.');
+      }
+    }
+  
+    // Fonction qui est appelée lors de la soumission du formulaire pour modifier l'article
+    document.getElementById('articleForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+    
+      const titre = document.getElementById('titre').value;
+      const sujet = document.getElementById('sujet').value;
+      const image = document.getElementById('image').value;
+    
+      if (!titre || !sujet || !image) {
+        alert('Veuillez remplir tous les champs.');
+        return;
+      }
+    
+      try {
+        const articleId = new URLSearchParams(window.location.search).get('id');
+        if (!articleId) {
+          alert('L\'ID de l\'article est manquant.');
+          return;
+        }
+    
+        const response = await fetch(`/article/updateArticle/${articleId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ titre, sujet, image }),
+        });
+    
+        const result = await response.json();
+    
+        if (response.ok) {
+          alert('Article modifié avec succès !');
+          window.location.href = 'listearticle.html';  // Rediriger vers la liste des articles
+        } else {
+          alert(`Erreur : ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la modification de l\'article :', error);
+        alert('Erreur réseau, veuillez réessayer.');
+      }
+    });
+  
+    // Charger la liste des images et l'article existant lors du chargement de la page
+    const articleId = new URLSearchParams(window.location.search).get('id');
+    if (articleId) {
+      loadImages();
+      loadArticle(articleId);
+    } else {
+      alert('ID de l\'article manquant.');
+    }
+  </script>
+  
+</body>
+</html>
