@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liste des Articles</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    height: 100vh;
+    flex-direction: column;
+  }
+  .form-container, .table-container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  .form-container h2, .table-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .form-container label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  .form-container input, .form-container select, .form-container textarea, .form-container button {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+  .form-container button {
+    background: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  .form-container button:hover {
+    background: #0056b3;
+  }
+  .table-container table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  .table-container th, .table-container td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+  .table-container th {
+    background-color: #007bff;
+    color: white;
+  }
+  .action-buttons button {
+    margin: 5px;
+    padding: 5px 10px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  .action-buttons button:hover {
+    background-color: #218838;
+  }
+  /* Red delete button */
+  .delete-btn {
+    background-color: #dc3545; /* Red color */
+  }
+  .delete-btn:hover {
+    background-color: #c82333; /* Darker red when hovered */
+  }
+
+  .add-article {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    text-align: center;
+    transition: background-color 0.3s ease;
+  }
+
+  .add-article:hover {
+    background-color: #0056b3;
+  }
+
+  .add-article:active {
+    background-color: #003c8e;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  }
+
+</style>
+</head>
+<body>
+  <div class="table-container">
+    <h2>Liste des Articles</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Titre</th>
+          <th>Sujet</th>
+          <th>Image</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="articles-list">
+        <!-- Articles dynamically loaded -->
+      </tbody>
+    </table>
+    <button onclick="window.location.href='ajouterarticle.html'" class="add-article">Ajouter un Article</button>
+  </div>
+
+  <script>
+    // Fonction pour charger dynamiquement les articles depuis le backend
+    async function loadArticles() {
+      try {
+        const response = await fetch('/article/getAllArticles');
+
+        if (!response.ok) {
+          throw new Error(`Erreur réseau : ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Response Data:', data);
+
+        const articles = data.articles || [];
+        if (!Array.isArray(articles)) {
+          console.error('Erreur : Les données des articles ne sont pas au format attendu.');
+          return;
+        }
+
+        const articlesList = document.getElementById('articles-list');
+        articlesList.innerHTML = ''; // Clear previous content
+
+        articles.forEach(article => {
+          const row = document.createElement('tr');
+
+          const titleCell = document.createElement('td');
+          titleCell.textContent = article.titre;
+
+          const contentCell = document.createElement('td');
+          contentCell.textContent = article.sujet;
+
+          const imageCell = document.createElement('td');
+          const articleImage = document.createElement('img');
+          articleImage.src = article.image;
+          articleImage.alt = article.titre;
+          articleImage.style.width = '100px';
+          imageCell.appendChild(articleImage);
+
+          const actionsCell = document.createElement('td');
+          const actionsDiv = document.createElement('div');
+          actionsDiv.classList.add('action-buttons');
+
+          const updateButton = document.createElement('button');
+          updateButton.textContent = 'Mettre à jour';
+          updateButton.classList.add('update-btn');
+          updateButton.onclick = () => {
+            window.location.href = `modifierarticle.html?id=${article._id}`;
+          };
+
+          const deleteButton = document.createElement('button');
+          deleteButton.textContent = 'Supprimer';
+          deleteButton.classList.add('delete-btn');
+          deleteButton.onclick = () => deleteArticle(article._id);
+
+          actionsDiv.appendChild(updateButton);
+          actionsDiv.appendChild(deleteButton);
+
+          actionsCell.appendChild(actionsDiv);
+
+          row.appendChild(titleCell);
+          row.appendChild(contentCell);
+          row.appendChild(imageCell);
+          row.appendChild(actionsCell);
+
+          articlesList.appendChild(row);
+        });
+      } catch (error) {
+        console.error('Erreur lors du chargement des articles :', error);
+      }
+    }
+
+    async function deleteArticle(id) {
+      if (confirm('Êtes-vous sûr de vouloir supprimer cet article ?')) {
+        try {
+          const response = await fetch(`/article/deleteArticle/${id}`, { method: 'DELETE' });
+          if (response.ok) {
+            alert('Article supprimé avec succès !');
+            loadArticles();
+          } else {
+            alert('Erreur lors de la suppression.');
+          }
+        } catch (error) {
+          alert('Erreur réseau, veuillez réessayer.');
+        }
+      }
+    }
+
+    loadArticles();
+  </script>
+</body>
+</html>
